@@ -53,11 +53,11 @@ for i in range (100000):
         #ADD REWARD
         print("Striker - ball")
     player_contacts = p.getContactPoints(ball, pong2, linkIndexB=5)
-    if striker_contacts:
+    if player_contacts:
         #MINUS REWARD
         print("Player - ball")
     robot_contacts = p.getContactPoints(ball, pong2, linkIndexB=4)
-    if striker_contacts:
+    if robot_contacts:
         #ADD MOST REWARD
         print("Robot - ball")
 
@@ -101,11 +101,13 @@ for i in range (100000):
 
 
     if i % 100 == 0:
+        # MOVE LEFT
         maxVel = 0.5
         maxForce = 50
         p.setJointMotorControl2(pong2, 2, p.VELOCITY_CONTROL, targetVelocity=maxVel, force=maxForce)
 
     if i % 200 == 0:
+        # MOVE RIGHT
         maxVel = -0.5
         maxForce = 50
         p.setJointMotorControl2(pong2, 2, p.VELOCITY_CONTROL, targetVelocity=maxVel, force=maxForce)

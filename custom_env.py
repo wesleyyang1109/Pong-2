@@ -2,6 +2,7 @@ import gym
 from gym import spaces
 import pybullet as p
 import pybullet_data
+import numpy as np
 import time
 import os
 import random
@@ -14,7 +15,7 @@ class CustomEnv(gym.Env):
         # Action space: discrete (left, right, strike)
         self.action_space = spaces.Discrete(3)
 
-        # Observation space: continuous (puck x, y, vx, vy, striker x, y, striker_vx)
+        # Observation space: continuous (ball x, y, vx, vy, striker x, y, striker_vx)
         low_limit = np.array([-1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0])  # Min values
         high_limit = np.array([1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0])  # Max values
         self.observation_space = spaces.Box(low=low_limit, high=high_limit, shape=(7,))
@@ -63,17 +64,40 @@ class CustomEnv(gym.Env):
         # Reset the simulation and environment state
         p.resetSimulation()
         # Set initial positions or states of objects here
+        # TODO initial states
         return self._get_observation()  # Return the initial observation
 
     def step(self, action):
-        # Take an action in the environment
-        # Perform actions based on action space (e.g., control robot joints)
+    # Perform actions based on action space
+        # Left
+        if action == 0:
+            maxVel = 0.5
+            maxForce = 50
+            p.setJointMotorControl2(pong2, 2, p.VELOCITY_CONTROL, targetVelocity=maxVel, force=maxForce)
+
+        # Right
+        if action == 1:
+            maxVel = -0.5
+            maxForce = 50
+            p.setJointMotorControl2(pong2, 2, p.VELOCITY_CONTROL, targetVelocity=maxVel, force=maxForce)
+
+        # Shoot
+        if action == 2:
+            maxVel = 2
+            maxForce = 100000
+            p.setJointMotorControl2(pong2, 3, p.VELOCITY_CONTROL, targetVelocity=maxVel)
+            #TODO Reload with Threading
+
         p.stepSimulation()
-        reward = self._calculate_reward(action)  # Calculate reward based on action and state
+
+        self.state = self._get_observation()  # Get the current observation
+
+        #TODO Calculate Reward
+        reward = self._calculate_reward(self.state)  # Calculate reward based on action and state
+
         done = self._is_done()  # Determine if episode is finished
-        observation = self._get_observation()  # Get the current observation
         info = {}  # Optional info dictionary
-        return observation, reward, done, info
+        return self.state, reward, done, info
 
     def render(self, mode='human'):
         # Render the environment (optional)
@@ -85,26 +109,47 @@ class CustomEnv(gym.Env):
         p.disconnect(self.client)
 
     def _get_observation(self):
-        # Gather relevant information from the simulation for observation
-        # Example: joint positions, velocities, object positions
-        joint_positions, joint_velocities, object_positions = self._get_state_info()
-        # Combine or process information into a suitable observation array
+    # Gather relevant information from the simulation for observation
+    # Example: joint positions, velocities, object positions
+
+        # pong2 link position and vel
+        pos = p.getLinkState(pong2, 2, computeLinkVelocity=1)
+        striker_pos_x = pos[0][0]
+        striker_pos_y = pos[0][1]
+        striker_vel_x = pos[6][0]
+
+        # ball position and vel
+        ballPos, cubeOrn = p.getBasePositionAndOrientation(ball)
+        ball_pos_x = ballPos[0]
+        ball_pos_y = ballPos[1]
+        ballVel, angvel = p.getBaseVelocity(ball)
+        ball_vel_x = ballVel[0]
+        ball_vel_y = ballVel[1]
+
+        # Combine or process information into a suitable observation array   (ball x, y, vx, vy, striker x, y, striker_vx)
+        observation = np.concatenate((ball_pos_x, ball_pos_y, ball_vel_x, ball_vel_y, striker_pos_x, striker_pos_y, striker_vel_x))
         return observation
 
-    def _calculate_reward(self, action):
-        # Calculate reward based on the action and current state
-        # Example: positive reward for achieving goal, penalty for collisions
+    def _calculate_reward(self, state):
+    # Calculate reward based on the action and current state
+    # Example: positive reward for achieving goal, penalty for collisions
+        #Detection for Rewards
+        striker_contacts = p.getContactPoints(ball, pong2, linkIndexB=3)
+        if striker_contacts:
+            #ADD REWARD
+            print("Striker - ball")
+        player_contacts = p.getContactPoints(ball, pong2, linkIndexB=5)
+        if player_contacts:
+            #MINUS REWARD
+            print("Player - ball")
+        robot_contacts = p.getContactPoints(ball, pong2, linkIndexB=4)
+        if robot_contacts:
+            #ADD MOST REWARD
+            print("Robot - ball")
         return reward
 
     def _is_done(self):
         # Check if the episode should terminate
         # Example: robot falls, goal achieved, timeout reached
         return done
-
-    def _get_state_info(self):
-        # Helper function to retrieve specific state information from PyBullet
-        # Example: joint states, object poses
-        joint_positions, joint_velocities, object_positions = [], [], []
-        # ... Implement retrieval logic using PyBullet functions (p.getJointState, p.getBasePositionAndOrientation, etc.)
-        return joint_positions, joint_velocities, object_positions
 
