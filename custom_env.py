@@ -16,11 +16,11 @@ class CustomEnv(gym.Env):
         # Action space: discrete (left, right, strike, do nothing)
         self.action_space = spaces.Discrete(4)
 
-        # Observation space: continuous (ball x, y, vx, vy, striker x, y, striker_vx)
+        # Observation space: continuous (ball x, y, vx, vy, striker x, striker_vx)
         # TODO change bounds
-        low_limit = np.array([-1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0])  # Min values
-        high_limit = np.array([1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0])  # Max values
-        self.observation_space = spaces.Box(low=low_limit, high=high_limit, shape=(7,))
+        low_limit = np.array([-0.19, -0.5, -1.0, -3.0, -0.1255, -0.55])  # Min values
+        high_limit = np.array([0.19, 0.5, 1.0, 3.0, 0.1255, 0.55])  # Max values
+        self.observation_space = spaces.Box(low=low_limit, high=high_limit, shape=(6,))
 
         # Initialize PyBullet simulation
         self.client = p.connect(p.GUI)
@@ -91,7 +91,7 @@ class CustomEnv(gym.Env):
             # Reload with Threading
             threading.Thread(target=self.reload_striker).start()
 
-        if action == 3:
+
         # Do nothing
 
         p.stepSimulation()
@@ -121,7 +121,6 @@ class CustomEnv(gym.Env):
         # pong2 link position and vel
         pos = p.getLinkState(self.pong2, 2, computeLinkVelocity=1)
         striker_pos_x = pos[0][0]
-        striker_pos_y = pos[0][1]
         striker_vel_x = pos[6][0]
 
         # ball position and vel

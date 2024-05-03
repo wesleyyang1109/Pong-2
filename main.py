@@ -50,16 +50,21 @@ for i in range (100000):
     #Detection for Rewards
     striker_contacts = p.getContactPoints(ball, pong2, linkIndexB=3)
     if striker_contacts:
+        ok = 1
         #ADD REWARD
-        print("Striker - ball")
+        #print("Striker - ball")
+
     player_contacts = p.getContactPoints(ball, pong2, linkIndexB=5)
     if player_contacts:
+        ok = 1
         #MINUS REWARD
-        print("Player - ball")
+        #print("Player - ball")
+
     robot_contacts = p.getContactPoints(ball, pong2, linkIndexB=4)
     if robot_contacts:
+        ok = 1
         #ADD MOST REWARD
-        print("Robot - ball")
+        #print("Robot - ball")
 
 
 
@@ -71,8 +76,8 @@ for i in range (100000):
     striker_pos_y = pos[0][1]
     striker_vel_x = pos[6][0]
     # print(pos)
-    # print(pos[0], pos[6])
-    # print(striker_pos_x, striker_pos_y, striker_vel_x, striker_vel_y)
+    # print(striker_pos_x, striker_vel_x)
+
 
     #ball position and vel
     ballPos, cubeOrn = p.getBasePositionAndOrientation(ball)
@@ -81,6 +86,7 @@ for i in range (100000):
     ballVel, angvel = p.getBaseVelocity(ball)
     ball_vel_x = ballVel[0]
     ball_vel_y = ballVel[1]
+    # print(ball_pos_x, ball_pos_y, ball_vel_x, ball_vel_y)
 
 
 
@@ -98,7 +104,10 @@ for i in range (100000):
         # p.setJointMotorControl2(pong2, 3, p.POSITION_CONTROL, targetPos, force = maxForce, maxVelocity = maxVel)
         p.setJointMotorControl2(pong2, 3, p.VELOCITY_CONTROL, targetVelocity = maxVel)
 
-
+    if i % 50 == 0:
+        print("vel_x, vel_y")
+        print(ball_vel_x, ball_vel_y)
+        print("")
 
     if i % 100 == 0:
         # MOVE LEFT
