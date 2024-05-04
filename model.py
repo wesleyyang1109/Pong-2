@@ -17,10 +17,12 @@ class CustomEnv(gym.Env):
         self.action_space = spaces.Discrete(4)
 
         # Observation space: continuous (ball x, y, vx, vy, striker x, striker_vx)
-        # TODO change bounds
         low_limit = np.array([-0.19, -0.5, -1.0, -3.0, -0.1255, -0.55])  # Min values
         high_limit = np.array([0.19, 0.5, 1.0, 3.0, 0.1255, 0.55])  # Max values
         self.observation_space = spaces.Box(low=low_limit, high=high_limit, shape=(6,))
+
+        self.game_length = 500
+        self.flag = 0
 
         # Initialize PyBullet simulation
         self.client = p.connect(p.GUI)
@@ -64,9 +66,11 @@ class CustomEnv(gym.Env):
 
     def reset(self):
         # Reset the simulation and environment state
+        # TODO reset sim
         p.resetSimulation()
         # Set initial positions or states of objects here
         # TODO initial states
+        self.game_length = 500
         return self._get_observation()  # Return the initial observation
 
     def step(self, action):
@@ -90,9 +94,8 @@ class CustomEnv(gym.Env):
             p.setJointMotorControl2(self.pong2, 3, p.VELOCITY_CONTROL, targetVelocity=maxVel)
             # Reload with Threading
             threading.Thread(target=self.reload_striker).start()
-
-
-        # Do nothing
+        # reduce game length by 1
+        self.game_length -= 1
 
         p.stepSimulation()
 
@@ -158,13 +161,17 @@ class CustomEnv(gym.Env):
         return reward
 
     def _is_done(self):
-        # TODO
-        # Check if the episode should terminate
-        # Example: robot falls, goal achieved, timeout reached
-        # use self.flag
-        # also add time contraint
+        # Check if the game length has reached 0
+        if self.game_length <= 0:
+            done = True
+        # Check if any side scores
+        elif self.flag == 1:
+            done = True
+        else:
+            done = False
         return done
 
+    # TODO test reload
     def reload_striker(self):
         maxVel = -1
         # p.setJointMotorControl2(pong2, 3, p.POSITION_CONTROL, targetPos, force = maxForce, maxVelocity = maxVel)
