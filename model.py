@@ -87,13 +87,12 @@ class CustomEnv(gym.Env):
             maxForce = 50
             p.setJointMotorControl2(self.pong2, 2, p.VELOCITY_CONTROL, targetVelocity=maxVel, force=maxForce)
 
+        # TODO shoot also need threading
         # Shoot
         if action == 2:
-            maxVel = 2
-            maxForce = 100000
-            p.setJointMotorControl2(self.pong2, 3, p.VELOCITY_CONTROL, targetVelocity=maxVel)
-            # Reload with Threading
-            threading.Thread(target=self.reload_striker).start()
+            # Shoot and reload with Threading
+            threading.Thread(target=self.shoot_and_reload).start()
+
         # reduce game length by 1
         self.game_length -= 1
 
@@ -172,11 +171,16 @@ class CustomEnv(gym.Env):
         return done
 
     # TODO test reload
-    def reload_striker(self):
+    def shoot_and_reload(self):
+        maxVel = 2
+        maxForce = 100000
+        p.setJointMotorControl2(self.pong2, 3, p.VELOCITY_CONTROL, targetVelocity=maxVel)
+        time.sleep(0.3) #TODO
+
         maxVel = -1
         # p.setJointMotorControl2(pong2, 3, p.POSITION_CONTROL, targetPos, force = maxForce, maxVelocity = maxVel)
         p.setJointMotorControl2(self.pong2, 3, p.VELOCITY_CONTROL, targetVelocity=maxVel)
-        time.sleep(0.5)
+        time.sleep(0.5) #TODO
         p.setJointMotorControl2(self.pong2, 3, p.VELOCITY_CONTROL, targetVelocity=0)
 
 

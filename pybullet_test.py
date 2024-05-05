@@ -3,6 +3,8 @@ import time
 import pybullet_data
 import os
 import random
+import time
+import threading
 
 physicsClient = p.connect(p.GUI)
 p.setAdditionalSearchPath(pybullet_data.getDataPath())
@@ -43,6 +45,18 @@ z = 0
 y = -abs(random.uniform(0.5, 10))  # Generate negative random value between 0 and 1
 
 p.applyExternalForce(ball, -1, [x, y, z], [0, 0, 0], 1)
+
+def shoot_and_reload():
+    shootVel = 2
+    maxForce = 100000
+    p.setJointMotorControl2(pong2, 3, p.VELOCITY_CONTROL, targetVelocity=shootVel)
+    time.sleep(0.3)  # TODO
+
+    reloadVel = -1
+    # p.setJointMotorControl2(pong2, 3, p.POSITION_CONTROL, targetPos, force = maxForce, maxVelocity = maxVel)
+    p.setJointMotorControl2(pong2, 3, p.VELOCITY_CONTROL, targetVelocity=reloadVel)
+    time.sleep(0.5)  # TODO
+    p.setJointMotorControl2(pong2, 3, p.VELOCITY_CONTROL, targetVelocity=0)
 
 
 for i in range (100000):
@@ -90,24 +104,27 @@ for i in range (100000):
 
 
 
-    if i % 5 == 0:
+    if i % 10 == 0:
         targetPos = 0.015
         maxVel = 2
         maxForce = 100000
-        # p.setJointMotorControl2(pong2, 3, p.POSITION_CONTROL, targetPos, force = maxForce, maxVelocity = maxVel)
-        p.setJointMotorControl2(pong2, 3, p.VELOCITY_CONTROL, targetVelocity = maxVel)
+        # p.setJointMotorControl2(pong2, 3, p.VELOCITY_CONTROL, targetVelocity = maxVel)
 
-    if i % 10 == 0:
-        targetPos = 0.015
-        maxVel = -1
-        maxForce = 100000
-        # p.setJointMotorControl2(pong2, 3, p.POSITION_CONTROL, targetPos, force = maxForce, maxVelocity = maxVel)
-        p.setJointMotorControl2(pong2, 3, p.VELOCITY_CONTROL, targetVelocity = maxVel)
+        threading.Thread(target=shoot_and_reload).start()
 
-    if i % 50 == 0:
-        print("vel_x, vel_y")
-        print(ball_vel_x, ball_vel_y)
-        print("")
+
+
+    # if i % 10 == 0:
+    #     targetPos = 0.015
+    #     maxVel = -1
+    #     maxForce = 100000
+    #     # p.setJointMotorControl2(pong2, 3, p.POSITION_CONTROL, targetPos, force = maxForce, maxVelocity = maxVel)
+    #     p.setJointMotorControl2(pong2, 3, p.VELOCITY_CONTROL, targetVelocity = maxVel)
+
+    # if i % 50 == 0:
+    #     print("vel_x, vel_y")
+    #     print(ball_vel_x, ball_vel_y)
+    #     print("")
 
     if i % 100 == 0:
         # MOVE LEFT
