@@ -22,7 +22,7 @@ class CustomEnv(gym.Env):
         self.observation_space = spaces.Box(low=low_limit, high=high_limit, shape=(6,))
 
         # Initialize PyBullet simulation
-        self.client = p.connect(p.GUI)
+        self.client = p.connect(p.DIRECT)
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
         p.setGravity(0, 0, -9.8)
 
@@ -82,7 +82,7 @@ class CustomEnv(gym.Env):
             maxForce = 50
             p.setJointMotorControl2(self.pong2, 2, p.VELOCITY_CONTROL, targetVelocity=maxVel, force=maxForce)
 
-        # TODO shoot also need threading
+        # TODO
         # Shoot
         if action == 2:
             # Shoot and reload with Threading
