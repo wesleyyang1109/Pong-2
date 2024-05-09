@@ -1,5 +1,6 @@
-import gym
-from gym import spaces
+import gymnasium as gym
+from gymnasium import spaces
+from gymnasium import Env
 import pybullet as p
 import pybullet_data
 import numpy as np
@@ -7,9 +8,9 @@ import time
 import threading
 import os
 import random
+from stable_baselines3.common.env_checker import check_env
 
-
-class CustomEnv(gym.Env):
+class Pong2Env(Env):
     """Custom environment using OpenAI Gym and PyBullet."""
 
     def __init__(self):
@@ -26,7 +27,7 @@ class CustomEnv(gym.Env):
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
         p.setGravity(0, 0, -9.8)
 
-    def reset(self):
+    def reset(self, seed=None):
         # Reset the simulation to the initial state
         p.resetSimulation(self.client)
 
@@ -82,11 +83,12 @@ class CustomEnv(gym.Env):
             maxForce = 50
             p.setJointMotorControl2(self.pong2, 2, p.VELOCITY_CONTROL, targetVelocity=maxVel, force=maxForce)
 
-        # TODO
         # Shoot
         if action == 2:
             # Shoot and reload with Threading
             threading.Thread(target=self.shoot_and_reload).start()
+            # Prevent agent from spamming action 3
+            shoot_penalty = -1
 
         # reduce game length by 1
         self.game_length -= 1
@@ -96,7 +98,7 @@ class CustomEnv(gym.Env):
         self.state = self._get_observation()  # Get the current observation
 
         # Calculate Reward
-        reward = self._calculate_reward(self.state)  # Calculate reward based on action and state
+        reward = shoot_penalty + self._calculate_reward(self.state)  # Calculate reward based on action and state
 
         done = self._is_done()  # Determine if episode is finished
         info = {}  # Optional info dictionary
@@ -127,8 +129,9 @@ class CustomEnv(gym.Env):
         ball_vel_x = ballVel[0]
         ball_vel_y = ballVel[1]
 
+        # TODO
         # Combine or process information into a suitable observation array   (ball x, y, vx, vy, striker x, y, striker_vx)
-        observation = np.concatenate((ball_pos_x, ball_pos_y, ball_vel_x, ball_vel_y, striker_pos_x, striker_pos_y, striker_vel_x))
+        observation = np.concatenate((ball_pos_x, ball_pos_y, ball_vel_x, ball_vel_y, striker_pos_x, striker_vel_x))
         return observation
 
     def _calculate_reward(self, state):
@@ -164,17 +167,20 @@ class CustomEnv(gym.Env):
             done = False
         return done
 
-    # TODO test reload
     def shoot_and_reload(self):
         maxVel = 2
-        maxForce = 100000
+        #maxForce = 100000
         p.setJointMotorControl2(self.pong2, 3, p.VELOCITY_CONTROL, targetVelocity=maxVel)
-        time.sleep(0.3) #TODO
+        time.sleep(0.5)
 
         maxVel = -1
         # p.setJointMotorControl2(pong2, 3, p.POSITION_CONTROL, targetPos, force = maxForce, maxVelocity = maxVel)
         p.setJointMotorControl2(self.pong2, 3, p.VELOCITY_CONTROL, targetVelocity=maxVel)
-        time.sleep(0.5) #TODO
+        time.sleep(0.5)
         p.setJointMotorControl2(self.pong2, 3, p.VELOCITY_CONTROL, targetVelocity=0)
 
 
+env=Pong2Env()
+print(env.observation_space.sample())
+print(env.action_space.sample())
+check_env(env, warn=True)
