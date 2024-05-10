@@ -49,7 +49,7 @@ p.applyExternalForce(ball, -1, [x, y, z], [0, 0, 0], 1)
 def shoot_and_reload():
     shootVel = 2
     p.setJointMotorControl2(pong2, 3, p.VELOCITY_CONTROL, targetVelocity=shootVel)
-    time.sleep(0.5)  # TODO
+    time.sleep(0.5)
     # striker = p.getLinkState(pong2, 3, computeLinkVelocity=1)
     # striker_vel = striker[6][0]
     # print("STRIKER VEL FUUUUUCCCKK")
@@ -60,7 +60,7 @@ def shoot_and_reload():
     reloadVel = -1
     # p.setJointMotorControl2(pong2, 3, p.POSITION_CONTROL, targetPos, force = maxForce, maxVelocity = maxVel)
     p.setJointMotorControl2(pong2, 3, p.VELOCITY_CONTROL, targetVelocity=reloadVel)
-    time.sleep(0.5)  # TODO
+    time.sleep(0.5)
     # striker = p.getLinkState(pong2, 3, computeLinkVelocity=1)
     # striker_vel = striker[6][0]
     # print("STRIKER END")

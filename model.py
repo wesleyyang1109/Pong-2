@@ -18,8 +18,8 @@ class Pong2Env(Env):
         self.action_space = spaces.Discrete(4)
 
         # Observation space: continuous (ball x, y, vx, vy, striker x, striker_vx)
-        low_limit = np.array([-0.19, -0.5, -1.0, -3.0, -0.1255, -0.55])  # Min values
-        high_limit = np.array([0.19, 0.5, 1.0, 3.0, 0.1255, 0.55])  # Max values
+        low_limit = np.array([-0.2, -0.5, -3.0, -3.0, -0.1255, -0.55])  # Min values
+        high_limit = np.array([0.2, 0.5, 3.0, 3.0, 0.1255, 0.55])  # Max values
         self.observation_space = spaces.Box(low=low_limit, high=high_limit, shape=(6,))
 
         # Initialize PyBullet simulation
@@ -66,11 +66,13 @@ class Pong2Env(Env):
         cameraTargetPosition = [0, 0, 0]
         p.resetDebugVisualizerCamera(cameraDistance, cameraYaw, cameraPitch, cameraTargetPosition)
 
+        info = {}
         # Return the initial observation
-        return self._get_observation()
+        return self._get_observation(), info
 
     def step(self, action):
     # Perform actions based on action space
+        shoot_penalty = 0
         # Left
         if action == 0:
             maxVel = 0.5
@@ -85,10 +87,11 @@ class Pong2Env(Env):
 
         # Shoot
         if action == 2:
-            # Shoot and reload with Threading
-            threading.Thread(target=self.shoot_and_reload).start()
             # Prevent agent from spamming action 3
             shoot_penalty = -1
+            # Shoot and reload with Threading
+            threading.Thread(target=self.shoot_and_reload).start()
+
 
         # reduce game length by 1
         self.game_length -= 1
@@ -97,12 +100,18 @@ class Pong2Env(Env):
 
         self.state = self._get_observation()  # Get the current observation
 
+        # TODO
+        print("test 1:")
+        print(self.state)
+        print("")
+
         # Calculate Reward
         reward = shoot_penalty + self._calculate_reward(self.state)  # Calculate reward based on action and state
 
         done = self._is_done()  # Determine if episode is finished
+        truncated = False
         info = {}  # Optional info dictionary
-        return self.state, reward, done, info
+        return self.state, reward, done, truncated, info
 
     def render(self, mode='human'):
         # Render the environment
@@ -130,13 +139,15 @@ class Pong2Env(Env):
         ball_vel_y = ballVel[1]
 
         # TODO
-        # Combine or process information into a suitable observation array   (ball x, y, vx, vy, striker x, y, striker_vx)
-        observation = np.concatenate((ball_pos_x, ball_pos_y, ball_vel_x, ball_vel_y, striker_pos_x, striker_vel_x))
+        # Combine or process information into a suitable observation array   (ball x, y, vx, vy, striker x, striker_vx)
+        observation = np.concatenate((np.array([ball_pos_x]), np.array([ball_pos_y]), np.array([ball_vel_x]), np.array([ball_vel_y]), np.array([striker_pos_x]), np.array([striker_vel_x])))
+        observation = observation.astype(np.float32)
         return observation
 
     def _calculate_reward(self, state):
     # Calculate reward based on the action and current state
 
+        reward = 0
         # Striker touches Ball
         striker_contacts = p.getContactPoints(self.ball, self.pong2, linkIndexB=3)
         if striker_contacts:
