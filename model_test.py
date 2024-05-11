@@ -34,7 +34,7 @@ class Pong2Env(Env):
     def reset(self, seed=None):
         # Reset the simulation to the initial state
         p.disconnect(self.client)
-        self.client = p.connect(p.DIRECT)
+        self.client = p.connect(p.GUI)
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
         p.setGravity(0, 0, -9.8)
 
@@ -64,8 +64,7 @@ class Pong2Env(Env):
 
         # Reset other variables
         self.game_length = 500
-        self.endflag = 0
-        self.strikerflag = 0
+        self.flag = 0
 
         # Set the camera position
         cameraDistance = 1
@@ -150,32 +149,22 @@ class Pong2Env(Env):
     # Calculate reward based on the action and current state
 
         reward = 0
-        # If striker hasn't touch the ball at all
-        if self.strikerflag == 0:
-            # Striker touches Ball
-            striker_contacts = p.getContactPoints(self.ball, self.pong2, linkIndexB=3)
-            if striker_contacts:
-                reward = 10
-                self.strikerflag = 1
+        # Striker touches Ball
+        striker_contacts = p.getContactPoints(self.ball, self.pong2, linkIndexB=3)
+        if striker_contacts:
+            reward = 10
 
         # Ball touches player sensor (Robot Wins)
         player_contacts = p.getContactPoints(self.ball, self.pong2, linkIndexB=5)
         if player_contacts:
             reward = 20
-            self.endflag = 1
+            self.flag = 1
 
         # Ball touches robot sensor (Player Wins)
         robot_contacts = p.getContactPoints(self.ball, self.pong2, linkIndexB=4)
         if robot_contacts:
             reward = -15
-            self.endflag = 1
-
-        if self.strikerflag == 1:
-            speed_reward = -state[3]
-        else:
-            speed_reward = 0
-
-        reward = reward + speed_reward
+            self.flag = 1
 
         return reward
 
@@ -184,7 +173,7 @@ class Pong2Env(Env):
         if self.game_length <= 0:
             done = True
         # Check if any side scores
-        elif self.endflag == 1:
+        elif self.flag == 1:
             done = True
         else:
             done = False
@@ -202,34 +191,23 @@ class Pong2Env(Env):
         time.sleep(0.5)
         p.setJointMotorControl2(self.pong2, 3, p.VELOCITY_CONTROL, targetVelocity=0)
 
+
+
 env = Pong2Env()
 env = Monitor(env)
 
-# Test Environment
-# episodes = 1
-# for episode in range(1, episodes + 1):
-#     state = env.reset()
-#     done = False
-#     score = 0
-#
-#     while not done:
-#         env.render()
-#         action = env.action_space.sample()
-#         n_state, reward, done, _, info = env.step(action)
-#         score += reward
-#     print('Episode:{} Score:{}'.format(episode, score))
-# env.close()
+model = PPO.load('Training/Saved Models/PPO_Model_Pong2', env=env)
 
-log_path = os.path.join('Training', 'Logs')
+episodes = 1
+for episode in range(1, episodes+1):
+    obs, _ = env.reset()
+    done = False
+    score = 0
 
-model = PPO("MlpPolicy", env, verbose=1, tensorboard_log=log_path)
-model.learn(total_timesteps=1000000)
-
-PPO_Path = os.path.join('Training', 'Saved Models', 'PPO_Model_Pong2')
-model.save(PPO_Path)
-
-# mean_reward, std_reward = evaluate_policy(model, env, n_eval_episodes=10)
-# env=Pong2Env()
-# print(env.observation_space.sample())
-# print(env.action_space.sample())
-#check_env(env, warn=True)
+    while not done:
+        env.render()
+        action, _states = model.predict(obs)
+        obs, reward, done, info, ok = env.step(action)
+        score += reward
+    print('Episode:{} Score:{}'.format(episode, score))
+env.close()
