@@ -63,7 +63,7 @@ class Pong2Env(Env):
         p.applyExternalForce(self.ball, -1, [x, y, z], [0, 0, 0], p.WORLD_FRAME)
 
         # Reset other variables
-        self.game_length = 500
+        self.game_length = 10000
         self.endflag = 0
         self.strikerflag = 0
 
@@ -96,7 +96,7 @@ class Pong2Env(Env):
         # Shoot
         if action == 2:
             # Prevent agent from spamming action 3
-            shoot_penalty = -1
+            shoot_penalty = -10
             # Shoot and reload with Threading
             threading.Thread(target=self.shoot_and_reload).start()
 
@@ -161,21 +161,24 @@ class Pong2Env(Env):
         # Ball touches player sensor (Robot Wins)
         player_contacts = p.getContactPoints(self.ball, self.pong2, linkIndexB=5)
         if player_contacts:
-            reward = 20
+            reward = 50
             self.endflag = 1
 
         # Ball touches robot sensor (Player Wins)
         robot_contacts = p.getContactPoints(self.ball, self.pong2, linkIndexB=4)
         if robot_contacts:
-            reward = -15
+            reward = -50
             self.endflag = 1
 
+        # Higher reward for higher ball velocity after striking
         if self.strikerflag == 1:
-            speed_reward = -state[3]
+            speed_reward = state[3] * 10
         else:
             speed_reward = 0
 
-        reward = reward + speed_reward
+        length_penalty = (10000 - self.game_length) * 0.025
+
+        reward = reward + speed_reward - length_penalty
 
         return reward
 
