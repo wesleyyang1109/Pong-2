@@ -57,7 +57,7 @@ def shoot_and_reload():
     # print("")
     # time.sleep(0.2)
 
-    reloadVel = -1
+    reloadVel = -0.007
     # p.setJointMotorControl2(pong2, 3, p.POSITION_CONTROL, targetPos, force = maxForce, maxVelocity = maxVel)
     p.setJointMotorControl2(pong2, 3, p.VELOCITY_CONTROL, targetVelocity=reloadVel)
     time.sleep(0.5)
@@ -115,7 +115,7 @@ for i in range (100000):
 
 
 
-    if i % 100 == 0:
+    if i % 300 == 0:
         targetPos = 0.015
         maxVel = 2
         maxForce = 100000

@@ -1,3 +1,4 @@
+from old_model import Pong2Env
 import gymnasium as gym
 from gymnasium import spaces
 from gymnasium import Env
@@ -14,17 +15,17 @@ from stable_baselines3.common.vec_env import VecFrameStack
 from stable_baselines3.common.evaluation import evaluate_policy
 from stable_baselines3.common.monitor import Monitor
 
-class Pong2Env(Env):
+class Pong2newEnv(Env):
     """Custom environment using OpenAI Gym and PyBullet."""
 
     def __init__(self):
         # Action space: discrete (left, right, strike, do nothing)
         self.action_space = spaces.Discrete(4)
 
-        # Observation space: continuous (ball x, y, vx, vy, striker x, striker_vx)
-        low_limit = np.array([-0.2, -0.5, -3.0, -3.0, -0.1255, -0.55])  # Min values
-        high_limit = np.array([0.2, 0.5, 3.0, 3.0, 0.1255, 0.55])  # Max values
-        self.observation_space = spaces.Box(low=low_limit, high=high_limit, shape=(6,))
+        # Observation space: continuous (ball x, y, vx, vy, old_striker x, old_striker_vx, new_striker x, new_striker_vx)
+        low_limit = np.array([-0.2, -0.5, -3.0, -3.0, -0.1255, -0.55, -0.1255, -0.55])  # Min values
+        high_limit = np.array([0.2, 0.5, 3.0, 3.0, 0.1255, 0.55, 0.1255, 0.55])  # Max values
+        self.observation_space = spaces.Box(low=low_limit, high=high_limit, shape=(8,))
 
         # Initialize PyBullet simulation
         self.client = p.connect(p.DIRECT)
@@ -41,6 +42,7 @@ class Pong2Env(Env):
         # Load the plane URDF
         self.planeId = p.loadURDF("plane.urdf", [0, 0, 0], p.getQuaternionFromEuler([0, 0, 0]))
 
+        # TODO spawn new pong2 urdf
         # Respawn pong2
         startPosPong2 = [0, 0, 0]
         startOrientationPong2 = p.getQuaternionFromEuler([0, 0, 0])
@@ -56,7 +58,19 @@ class Pong2Env(Env):
         self.ball = p.loadURDF("ball.urdf", startPosBall, startOrientationBall)
         p.changeDynamics(self.ball, -1, restitution=0.5)
 
-        # Apply a random force to the ball
+        old_env = Pong2Env()
+        old_env = Monitor(old_env)
+
+        model = PPO.load('Training/Saved Models/PPO_Model_Pong2', env=old_env)
+
+        _o, _ = env.reset()
+        obs = #TODO get observation for old model (6 parameters)
+        done = False
+        action, _states = model.predict(obs)
+        # TODO setjointmotorcontrol with action
+
+
+        # Apply a random force to the ball # TODO change force magnitude
         x = random.uniform(-4, 4)
         y = -abs(random.uniform(2, 4))
         z = 0
@@ -223,13 +237,13 @@ env = Monitor(env)
 #     print('Episode:{} Score:{}'.format(episode, score))
 # env.close()
 
-log_path = os.path.join('Training', 'Logs')
-
-model = PPO("MlpPolicy", env, verbose=1, tensorboard_log=log_path)
-model.learn(total_timesteps=1000000)
-
-PPO_Path = os.path.join('Training', 'Saved Models', 'PPO_Model_Pong2')
-model.save(PPO_Path)
+# log_path = os.path.join('Training', 'Logs')
+#
+# model = PPO("MlpPolicy", env, verbose=1, tensorboard_log=log_path)
+# model.learn(total_timesteps=1000000)
+#
+# PPO_Path = os.path.join('Training', 'Saved Models', 'PPO_Model_Pong2')
+# model.save(PPO_Path)
 
 # mean_reward, std_reward = evaluate_policy(model, env, n_eval_episodes=10)
 # env=Pong2Env()
