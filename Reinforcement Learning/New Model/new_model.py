@@ -53,17 +53,17 @@ class Pong2newEnv(Env):
         self.ball = p.loadURDF("../URDF/ball.urdf", startPosBall, startOrientationBall)
         p.changeDynamics(self.ball, -1, restitution=0.5)
 
+
+        # Move old striker with old model
         old_env = Pong2Env()
         old_env = Monitor(old_env)
 
-        model = PPO.load('Reinforcement Learning/Training/Saved Models/PPO_Model_Pong2', env=old_env)
+        self.model = PPO.load('Reinforcement Learning/Training/Saved Models/PPO_Model_Pong2', env=old_env)
 
-        _o, _ = env.reset()
-        obs = #TODO get observation for old model (6 parameters)
-        done = False
-        action, _states = model.predict(obs)
-        # TODO setjointmotorcontrol with action
-
+        obs = self._get_observation()
+        obs = obs[:-2]
+        action, _states = self.model.predict(obs)
+        self.old_action(action)
 
         # Apply a random force to the ball # TODO change force magnitude
         x = random.uniform(-4, 4)
@@ -109,6 +109,11 @@ class Pong2newEnv(Env):
             # Shoot and reload with Threading
             threading.Thread(target=self.shoot_and_reload).start()
 
+        # Move old striker with old model
+        obs = self._get_observation()
+        obs = obs[:-2]
+        action, _states = self.model.predict(obs)
+        self.old_action(action)
 
         # reduce game length by 1
         self.game_length -= 1
@@ -202,7 +207,8 @@ class Pong2newEnv(Env):
             done = False
         return done
 
-    def shoot_and_reload(self):
+
+    def new_shoot_and_reload(self):  # TODO new striker shoot reload
         maxVel = 2
         #maxForce = 100000
         p.setJointMotorControl2(self.pong2, 3, p.VELOCITY_CONTROL, targetVelocity=maxVel)
@@ -214,6 +220,34 @@ class Pong2newEnv(Env):
         time.sleep(0.5)
         p.setJointMotorControl2(self.pong2, 3, p.VELOCITY_CONTROL, targetVelocity=0)
 
+    def old_shoot_and_reload(self):
+        maxVel = 2
+        #maxForce = 100000
+        p.setJointMotorControl2(self.pong2, 3, p.VELOCITY_CONTROL, targetVelocity=maxVel)
+        time.sleep(0.5)
+
+        maxVel = -1
+        # p.setJointMotorControl2(pong2, 3, p.POSITION_CONTROL, targetPos, force = maxForce, maxVelocity = maxVel)
+        p.setJointMotorControl2(self.pong2, 3, p.VELOCITY_CONTROL, targetVelocity=maxVel)
+        time.sleep(0.5)
+        p.setJointMotorControl2(self.pong2, 3, p.VELOCITY_CONTROL, targetVelocity=0)
+
+    def old_action(self, action):
+        if action == 0:
+            maxVel = 0.5
+            maxForce = 50
+            p.setJointMotorControl2(self.pong2, 2, p.VELOCITY_CONTROL, targetVelocity=maxVel, force=maxForce)
+
+        # Right
+        if action == 1:
+            maxVel = -0.5
+            maxForce = 50
+            p.setJointMotorControl2(self.pong2, 2, p.VELOCITY_CONTROL, targetVelocity=maxVel, force=maxForce)
+
+        # Shoot
+        if action == 2:
+            # Shoot and reload with Threading
+            threading.Thread(target=self.old_shoot_and_reload).start()
 
 # Test Environment
 # episodes = 1
