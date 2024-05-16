@@ -214,8 +214,6 @@ class Pong2newEnv(Env):
         time.sleep(0.5)
         p.setJointMotorControl2(self.pong2, 3, p.VELOCITY_CONTROL, targetVelocity=0)
 
-env = Pong2Env()
-env = Monitor(env)
 
 # Test Environment
 # episodes = 1
