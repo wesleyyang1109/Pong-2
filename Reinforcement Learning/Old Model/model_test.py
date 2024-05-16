@@ -19,7 +19,7 @@ from stable_baselines3.common.monitor import Monitor
 env = Pong2Env()
 env = Monitor(env)
 
-model = PPO.load('Training/Saved Models/PPO_Model_Pong2', env=env)
+model = PPO.load('Reinforcement Learning/Training/Saved Models/PPO_Model_Pong2', env=env)
 # episode = 1
 # score = 0
 # obs, _ = env.reset()

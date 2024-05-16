@@ -23,7 +23,7 @@ p.resetDebugVisualizerCamera(cameraDistance, cameraYaw, cameraPitch, cameraTarge
 
 startPos = [0,0,0]
 startOrientation = p.getQuaternionFromEuler([0,0,0])
-pong2 = p.loadURDF("pong2.urdf",startPos, startOrientation)
+pong2 = p.loadURDF("URDF/pong2.urdf", startPos, startOrientation)
 fixed_pos = [0, 0, 0]  # Change this to the desired fixed position
 p.createConstraint(pong2, -1, -1, -1, p.JOINT_FIXED, fixed_pos, [0, 0, 0], [0, 0, 0])
 for i in range(4):
@@ -33,7 +33,7 @@ for i in range(4):
 
 startPos = [0, 0.25, 0.085]
 startOrientation1 = p.getQuaternionFromEuler([0,0,0])
-ball = p.loadURDF("ball.urdf",startPos, startOrientation1)
+ball = p.loadURDF("URDF/ball.urdf", startPos, startOrientation1)
 
 p.changeDynamics(ball, -1, restitution = 0.5)
 
@@ -159,7 +159,7 @@ for i in range (100000):
         spawnpos = random.uniform(-0.2, 0.2)
         startPos = [spawnpos, 0.25, 0.085]
         startOrientation1 = p.getQuaternionFromEuler([0, 0, 0])
-        ball = p.loadURDF("ball.urdf", startPos, startOrientation1)
+        ball = p.loadURDF("URDF/ball.urdf", startPos, startOrientation1)
         p.changeDynamics(ball, -1, restitution=0.5)
 
         # Generate random x and z values between -1 and 1

@@ -44,7 +44,7 @@ class Pong2Env(Env):
         # Respawn pong2
         startPosPong2 = [0, 0, 0]
         startOrientationPong2 = p.getQuaternionFromEuler([0, 0, 0])
-        self.pong2 = p.loadURDF("pong2.urdf", startPosPong2, startOrientationPong2)
+        self.pong2 = p.loadURDF("../URDF/pong2.urdf", startPosPong2, startOrientationPong2)
         p.createConstraint(self.pong2, -1, -1, -1, p.JOINT_FIXED, [0, 0, 0], [0, 0, 0], [0, 0, 0])
         for i in range(4):
             p.changeDynamics(self.pong2, i, restitution=0.5)
@@ -53,7 +53,7 @@ class Pong2Env(Env):
         spawnpos = random.uniform(-0.2, 0.2)
         startPosBall = [spawnpos, 0.25, 0.085]
         startOrientationBall = p.getQuaternionFromEuler([0, 0, 0])
-        self.ball = p.loadURDF("ball.urdf", startPosBall, startOrientationBall)
+        self.ball = p.loadURDF("../URDF/ball.urdf", startPosBall, startOrientationBall)
         p.changeDynamics(self.ball, -1, restitution=0.5)
 
         # TODO change force magnitude

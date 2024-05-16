@@ -1,5 +1,4 @@
 from old_model import Pong2Env
-import gymnasium as gym
 from gymnasium import spaces
 from gymnasium import Env
 import pybullet as p
@@ -7,12 +6,8 @@ import pybullet_data
 import numpy as np
 import time
 import threading
-import os
 import random
-from stable_baselines3.common.env_checker import check_env
 from stable_baselines3 import PPO
-from stable_baselines3.common.vec_env import VecFrameStack
-from stable_baselines3.common.evaluation import evaluate_policy
 from stable_baselines3.common.monitor import Monitor
 
 class Pong2newEnv(Env):
@@ -46,7 +41,7 @@ class Pong2newEnv(Env):
         # Respawn pong2
         startPosPong2 = [0, 0, 0]
         startOrientationPong2 = p.getQuaternionFromEuler([0, 0, 0])
-        self.pong2 = p.loadURDF("pong2.urdf", startPosPong2, startOrientationPong2)
+        self.pong2 = p.loadURDF("../URDF/pong2.urdf", startPosPong2, startOrientationPong2)
         p.createConstraint(self.pong2, -1, -1, -1, p.JOINT_FIXED, [0, 0, 0], [0, 0, 0], [0, 0, 0])
         for i in range(4):
             p.changeDynamics(self.pong2, i, restitution=0.5)
@@ -55,13 +50,13 @@ class Pong2newEnv(Env):
         spawnpos = random.uniform(-0.2, 0.2)
         startPosBall = [spawnpos, 0.25, 0.085]
         startOrientationBall = p.getQuaternionFromEuler([0, 0, 0])
-        self.ball = p.loadURDF("ball.urdf", startPosBall, startOrientationBall)
+        self.ball = p.loadURDF("../URDF/ball.urdf", startPosBall, startOrientationBall)
         p.changeDynamics(self.ball, -1, restitution=0.5)
 
         old_env = Pong2Env()
         old_env = Monitor(old_env)
 
-        model = PPO.load('Training/Saved Models/PPO_Model_Pong2', env=old_env)
+        model = PPO.load('Reinforcement Learning/Training/Saved Models/PPO_Model_Pong2', env=old_env)
 
         _o, _ = env.reset()
         obs = #TODO get observation for old model (6 parameters)
