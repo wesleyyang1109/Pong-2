@@ -1,4 +1,7 @@
-from old_model import Pong2Env
+import sys
+import os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from Old_Model.old_model import Pong2Env
 from gymnasium import spaces
 from gymnasium import Env
 import pybullet as p
@@ -37,18 +40,17 @@ class Pong2newEnv(Env):
         # Load the plane URDF
         self.planeId = p.loadURDF("plane.urdf", [0, 0, 0], p.getQuaternionFromEuler([0, 0, 0]))
 
-        # TODO spawn new pong2 urdf
         # Respawn pong2
         startPosPong2 = [0, 0, 0]
         startOrientationPong2 = p.getQuaternionFromEuler([0, 0, 0])
-        self.pong2 = p.loadURDF("../URDF/pong2.urdf", startPosPong2, startOrientationPong2)
+        self.pong2 = p.loadURDF("../URDF/new_pong2.urdf", startPosPong2, startOrientationPong2)
         p.createConstraint(self.pong2, -1, -1, -1, p.JOINT_FIXED, [0, 0, 0], [0, 0, 0], [0, 0, 0])
         for i in range(4):
             p.changeDynamics(self.pong2, i, restitution=0.5)
 
         # Respawn ball
         spawnpos = random.uniform(-0.2, 0.2)
-        startPosBall = [spawnpos, 0.25, 0.085]
+        startPosBall = [spawnpos, 0.22, 0.1] #TODO make sure this is correct position
         startOrientationBall = p.getQuaternionFromEuler([0, 0, 0])
         self.ball = p.loadURDF("../URDF/ball.urdf", startPosBall, startOrientationBall)
         p.changeDynamics(self.ball, -1, restitution=0.5)
@@ -58,7 +60,8 @@ class Pong2newEnv(Env):
         old_env = Pong2Env()
         old_env = Monitor(old_env)
 
-        self.model = PPO.load('Reinforcement Learning/Training/Saved Models/PPO_Model_Pong2', env=old_env)
+        # TODO can't load file
+        self.model = PPO.load('Old_Model/Training/Saved Models/PPO_Model_Pong2', env=old_env)
 
         obs = self._get_observation()
         obs = obs[:-2]
@@ -71,7 +74,7 @@ class Pong2newEnv(Env):
         z = 0
         p.applyExternalForce(self.ball, -1, [x, y, z], [0, 0, 0], p.WORLD_FRAME)
 
-        # Reset other variables
+        # Reset other variables TODO check
         self.game_length = 10000
         self.endflag = 0
         self.strikerflag = 0
@@ -94,20 +97,20 @@ class Pong2newEnv(Env):
         if action == 0:
             maxVel = 0.5
             maxForce = 50
-            p.setJointMotorControl2(self.pong2, 2, p.VELOCITY_CONTROL, targetVelocity=maxVel, force=maxForce)
+            p.setJointMotorControl2(self.pong2, 8, p.VELOCITY_CONTROL, targetVelocity=maxVel, force=maxForce)
 
         # Right
         if action == 1:
             maxVel = -0.5
             maxForce = 50
-            p.setJointMotorControl2(self.pong2, 2, p.VELOCITY_CONTROL, targetVelocity=maxVel, force=maxForce)
+            p.setJointMotorControl2(self.pong2, 8, p.VELOCITY_CONTROL, targetVelocity=maxVel, force=maxForce)
 
         # Shoot
         if action == 2:
             # Prevent agent from spamming action 3
             shoot_penalty = -10
             # Shoot and reload with Threading
-            threading.Thread(target=self.shoot_and_reload).start()
+            threading.Thread(target=self.new_shoot_and_reload).start()
 
         # Move old striker with old model
         obs = self._get_observation()
@@ -147,6 +150,11 @@ class Pong2newEnv(Env):
         striker_pos_x = pos[0][0]
         striker_vel_x = pos[6][0]
 
+        # new striker position and vel
+        pos = p.getLinkState(self.pong2, 8, computeLinkVelocity=1)
+        striker2_pos_x = pos[0][0]
+        striker2_vel_x = pos[6][0]
+
         # ball position and vel
         ballPos, cubeOrn = p.getBasePositionAndOrientation(self.ball)
         ball_pos_x = ballPos[0]
@@ -155,9 +163,12 @@ class Pong2newEnv(Env):
         ball_vel_x = ballVel[0]
         ball_vel_y = ballVel[1]
 
-        # Combine or process information into a suitable observation array   (ball x, y, vx, vy, striker x, striker_vx)
-        observation = np.concatenate((np.array([ball_pos_x]), np.array([ball_pos_y]), np.array([ball_vel_x]), np.array([ball_vel_y]), np.array([striker_pos_x]), np.array([striker_vel_x])))
+        # Combine or process information into a suitable observation array   (ball x, y, vx, vy, striker x, striker_vx, striker2 x, striker2_vx)
+        observation = np.concatenate((np.array([ball_pos_x]), np.array([ball_pos_y]), np.array([ball_vel_x]),
+                                  np.array([ball_vel_y]), np.array([striker_pos_x]), np.array([striker_vel_x]),
+                                  np.array([striker2_pos_x]), np.array([striker2_vel_x])))
         observation = observation.astype(np.float32)
+
         return observation
 
     def _calculate_reward(self, state):
@@ -167,19 +178,19 @@ class Pong2newEnv(Env):
         # If striker hasn't touch the ball at all
         if self.strikerflag == 0:
             # Striker touches Ball
-            striker_contacts = p.getContactPoints(self.ball, self.pong2, linkIndexB=3)
+            striker_contacts = p.getContactPoints(self.ball, self.pong2, linkIndexB=9)
             if striker_contacts:
                 reward = 10
                 self.strikerflag = 1
 
-        # Ball touches player sensor (Robot Wins)
-        player_contacts = p.getContactPoints(self.ball, self.pong2, linkIndexB=5)
+        # Ball touches player sensor (New Striker Wins)
+        player_contacts = p.getContactPoints(self.ball, self.pong2, linkIndexB=4)
         if player_contacts:
             reward = 50
             self.endflag = 1
 
-        # Ball touches robot sensor (Player Wins)
-        robot_contacts = p.getContactPoints(self.ball, self.pong2, linkIndexB=4)
+        # Ball touches robot sensor (Old Striker Wins)
+        robot_contacts = p.getContactPoints(self.ball, self.pong2, linkIndexB=5)
         if robot_contacts:
             reward = -50
             self.endflag = 1
@@ -208,17 +219,17 @@ class Pong2newEnv(Env):
         return done
 
 
-    def new_shoot_and_reload(self):  # TODO new striker shoot reload
+    def new_shoot_and_reload(self):  # TODO new striker shoot reload (finish urdf first)
         maxVel = 2
         #maxForce = 100000
-        p.setJointMotorControl2(self.pong2, 3, p.VELOCITY_CONTROL, targetVelocity=maxVel)
+        p.setJointMotorControl2(self.pong2, 9, p.VELOCITY_CONTROL, targetVelocity=maxVel)
         time.sleep(0.5)
 
         maxVel = -1
         # p.setJointMotorControl2(pong2, 3, p.POSITION_CONTROL, targetPos, force = maxForce, maxVelocity = maxVel)
-        p.setJointMotorControl2(self.pong2, 3, p.VELOCITY_CONTROL, targetVelocity=maxVel)
+        p.setJointMotorControl2(self.pong2, 9, p.VELOCITY_CONTROL, targetVelocity=maxVel)
         time.sleep(0.5)
-        p.setJointMotorControl2(self.pong2, 3, p.VELOCITY_CONTROL, targetVelocity=0)
+        p.setJointMotorControl2(self.pong2, 9, p.VELOCITY_CONTROL, targetVelocity=0)
 
     def old_shoot_and_reload(self):
         maxVel = 2
@@ -249,20 +260,22 @@ class Pong2newEnv(Env):
             # Shoot and reload with Threading
             threading.Thread(target=self.old_shoot_and_reload).start()
 
+env = Pong2newEnv()
+env = Monitor(env)
 # Test Environment
-# episodes = 1
-# for episode in range(1, episodes + 1):
-#     state = env.reset()
-#     done = False
-#     score = 0
-#
-#     while not done:
-#         env.render()
-#         action = env.action_space.sample()
-#         n_state, reward, done, _, info = env.step(action)
-#         score += reward
-#     print('Episode:{} Score:{}'.format(episode, score))
-# env.close()
+episodes = 1
+for episode in range(1, episodes + 1):
+    state = env.reset()
+    done = False
+    score = 0
+
+    while not done:
+        env.render()
+        action = env.action_space.sample()
+        n_state, reward, done, _, info = env.step(action)
+        score += reward
+    print('Episode:{} Score:{}'.format(episode, score))
+env.close()
 
 # log_path = os.path.join('Training', 'Logs')
 #
