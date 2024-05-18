@@ -12,6 +12,7 @@ import threading
 import random
 from stable_baselines3 import PPO
 from stable_baselines3.common.monitor import Monitor
+from stable_baselines3.common.env_checker import check_env
 
 class Pong2newEnv(Env):
     """Custom environment using OpenAI Gym and PyBullet."""
@@ -60,8 +61,8 @@ class Pong2newEnv(Env):
         old_env = Pong2Env()
         old_env = Monitor(old_env)
 
-        # TODO can't load file
-        self.model = PPO.load('Old_Model/Training/Saved Models/PPO_Model_Pong2', env=old_env)
+        model_path = "/Users/wesleyyang/PycharmProjects/pong2/Reinforcement Learning/Old_Model/Training/Saved Models/PPO_Model_Pong2"
+        self.model = PPO.load(model_path, env=old_env)
 
         obs = self._get_observation()
         obs = obs[:-2]
@@ -75,7 +76,7 @@ class Pong2newEnv(Env):
         p.applyExternalForce(self.ball, -1, [x, y, z], [0, 0, 0], p.WORLD_FRAME)
 
         # Reset other variables TODO check
-        self.game_length = 10000
+        self.game_length = 1000000
         self.endflag = 0
         self.strikerflag = 0
 
@@ -171,6 +172,7 @@ class Pong2newEnv(Env):
 
         return observation
 
+# TODO fix the damn reward
     def _calculate_reward(self, state):
     # Calculate reward based on the action and current state
 
@@ -260,22 +262,24 @@ class Pong2newEnv(Env):
             # Shoot and reload with Threading
             threading.Thread(target=self.old_shoot_and_reload).start()
 
-env = Pong2newEnv()
-env = Monitor(env)
-# Test Environment
-episodes = 1
-for episode in range(1, episodes + 1):
-    state = env.reset()
-    done = False
-    score = 0
+# env = Pong2newEnv()
+# env = Monitor(env)
+# check_env(env, warn=True)
 
-    while not done:
-        env.render()
-        action = env.action_space.sample()
-        n_state, reward, done, _, info = env.step(action)
-        score += reward
-    print('Episode:{} Score:{}'.format(episode, score))
-env.close()
+# # Test Environment
+# episodes = 5
+# for episode in range(1, episodes + 1):
+#     state = env.reset()
+#     done = False
+#     score = 0
+#
+#     while not done:
+#         env.render()
+#         action = env.action_space.sample()
+#         n_state, reward, done, _, info = env.step(action)
+#         score += reward
+#     print('Episode:{} Score:{}'.format(episode, score))
+# env.close()
 
 # log_path = os.path.join('Training', 'Logs')
 #

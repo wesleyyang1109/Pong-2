@@ -20,10 +20,10 @@ cameraTargetPosition = [0, 0, 0]
 p.resetDebugVisualizerCamera(cameraDistance, cameraYaw, cameraPitch, cameraTargetPosition)
 
 
-# TODO spawn position changes cuz change of size
+
 startPos = [0,0,0]
 startOrientation = p.getQuaternionFromEuler([0,0,0])
-pong2 = p.loadURDF("URDF/pong2.urdf", startPos, startOrientation)
+pong2 = p.loadURDF("URDF/new_pong2.urdf", startPos, startOrientation)
 fixed_pos = [0, 0, 0]  # Change this to the desired fixed position
 p.createConstraint(pong2, -1, -1, -1, p.JOINT_FIXED, fixed_pos, [0, 0, 0], [0, 0, 0])
 for i in range(4):
@@ -31,7 +31,7 @@ for i in range(4):
 
 
 
-startPos = [0, 0.25, 0.085]
+startPos = [0, 0.225, 0.085]
 startOrientation1 = p.getQuaternionFromEuler([0,0,0])
 ball = p.loadURDF("URDF/ball.urdf", startPos, startOrientation1)
 
@@ -143,11 +143,21 @@ for i in range (100000):
         maxForce = 50
         p.setJointMotorControl2(pong2, 2, p.VELOCITY_CONTROL, targetVelocity=maxVel, force=maxForce)
 
+        # MOVE LEFT
+        maxVel = 0.5
+        maxForce = 50
+        p.setJointMotorControl2(pong2, 8, p.VELOCITY_CONTROL, targetVelocity=maxVel, force=maxForce)
+
     if i % 200 == 0:
         # MOVE RIGHT
         maxVel = -0.5
         maxForce = 50
         p.setJointMotorControl2(pong2, 2, p.VELOCITY_CONTROL, targetVelocity=maxVel, force=maxForce)
+
+        # MOVE RIGHT
+        maxVel = -0.5
+        maxForce = 50
+        p.setJointMotorControl2(pong2, 9, p.VELOCITY_CONTROL, targetVelocity=maxVel, force=maxForce)
 
 
         # targetPos = 0.015
@@ -156,8 +166,8 @@ for i in range (100000):
         # # p.setJointMotorControl2(pong2, 3, p.POSITION_CONTROL, targetPos, force = maxForce, maxVelocity = maxVel)
         # p.setJointMotorControl2(pong2, 3, p.VELOCITY_CONTROL, targetVelocity=maxVel)
 
-        spawnpos = random.uniform(-0.2, 0.2)
-        startPos = [spawnpos, 0.25, 0.085]
+        spawnpos = random.uniform(-0.15, 0.15)
+        startPos = [spawnpos, 0.225, 0.085]
         startOrientation1 = p.getQuaternionFromEuler([0, 0, 0])
         ball = p.loadURDF("URDF/ball.urdf", startPos, startOrientation1)
         p.changeDynamics(ball, -1, restitution=0.5)
