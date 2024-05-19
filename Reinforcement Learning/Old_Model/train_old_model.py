@@ -21,7 +21,7 @@ env = Monitor(env)
 log_path = os.path.join('Training', 'Logs')
 
 model = PPO("MlpPolicy", env, verbose=1, tensorboard_log=log_path)
-model.learn(total_timesteps=100000, progress_bar=True)
+model.learn(total_timesteps=1000000, progress_bar=True)
 
 PPO_Path = os.path.join('Training', 'Saved Models', 'PPO_Model_Pong2')
 model.save(PPO_Path)

@@ -22,8 +22,8 @@ class Pong2newEnv(Env):
         self.action_space = spaces.Discrete(4)
 
         # Observation space: continuous (ball x, y, vx, vy, old_striker x, old_striker_vx, new_striker x, new_striker_vx)
-        low_limit = np.array([-0.2, -0.5, -3.0, -3.0, -0.1255, -0.55, -0.1255, -0.55])  # Min values
-        high_limit = np.array([0.2, 0.5, 3.0, 3.0, 0.1255, 0.55, 0.1255, 0.55])  # Max values
+        low_limit = np.array([-0.2, -0.5, -3.0, -3.0, -0.09, -0.55, -0.09, -0.55])  # Min values
+        high_limit = np.array([0.2, 0.5, 3.0, 3.0, 0.09, 0.55, 0.09, 0.55])  # Max values
         self.observation_space = spaces.Box(low=low_limit, high=high_limit, shape=(8,))
 
         # Initialize PyBullet simulation

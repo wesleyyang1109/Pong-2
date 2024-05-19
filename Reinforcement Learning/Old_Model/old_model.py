@@ -22,8 +22,8 @@ class Pong2Env(Env):
         self.action_space = spaces.Discrete(4)
 
         # Observation space: continuous (ball x, y, vx, vy, striker x, striker_vx)
-        low_limit = np.array([-0.2, -0.5, -3.0, -3.0, -0.1255, -0.55])  # Min values
-        high_limit = np.array([0.2, 0.5, 3.0, 3.0, 0.1255, 0.55])  # Max values
+        low_limit = np.array([-0.2, -0.5, -3.0, -3.0, -0.09, -0.55])  # Min values
+        high_limit = np.array([0.2, 0.5, 3.0, 3.0, 0.09, 0.55])  # Max values
         self.observation_space = spaces.Box(low=low_limit, high=high_limit, shape=(6,))
 
         # Initialize PyBullet simulation
@@ -51,7 +51,7 @@ class Pong2Env(Env):
 
         # Respawn ball
         spawnpos = random.uniform(-0.2, 0.2)
-        startPosBall = [spawnpos, 0.25, 0.085]
+        startPosBall = [spawnpos, 0.22, 0.085]
         startOrientationBall = p.getQuaternionFromEuler([0, 0, 0])
         self.ball = p.loadURDF("../URDF/ball.urdf", startPosBall, startOrientationBall)
         p.changeDynamics(self.ball, -1, restitution=0.5)
@@ -97,7 +97,7 @@ class Pong2Env(Env):
         # Shoot
         if action == 2:
             # Prevent agent from spamming action 3
-            shoot_penalty = -10
+            shoot_penalty = -0.5
             # Shoot and reload with Threading
             threading.Thread(target=self.shoot_and_reload).start()
 
@@ -156,30 +156,30 @@ class Pong2Env(Env):
             # Striker touches Ball
             striker_contacts = p.getContactPoints(self.ball, self.pong2, linkIndexB=3)
             if striker_contacts:
-                reward = 10
+                reward = 5
                 self.strikerflag = 1
 
         # Ball touches player sensor (Robot Wins)
         player_contacts = p.getContactPoints(self.ball, self.pong2, linkIndexB=5)
         if player_contacts:
-            reward = 50
+            reward = 10
             self.endflag = 1
 
         # Ball touches robot sensor (Player Wins)
         robot_contacts = p.getContactPoints(self.ball, self.pong2, linkIndexB=4)
         if robot_contacts:
-            reward = -50
+            reward = -5
             self.endflag = 1
 
         # Higher reward for higher ball velocity after striking
         if self.strikerflag == 1:
-            speed_reward = state[3] * 10
+            speed_reward = state[3]
         else:
             speed_reward = 0
 
-        length_penalty = (10000 - self.game_length) * 0.025
+        #length_penalty = (10000 - self.game_length) * 0.025
 
-        reward = reward + speed_reward - length_penalty
+        reward = reward + speed_reward# - length_penalty
 
         return reward
 
