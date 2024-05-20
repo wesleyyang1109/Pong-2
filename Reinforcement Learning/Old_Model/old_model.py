@@ -67,6 +67,7 @@ class Pong2Env(Env):
         self.game_length = 10000
         self.endflag = 0
         self.strikerflag = 0
+        self.shootflag = 0
 
         # Set the camera position
         cameraDistance = 1
@@ -79,6 +80,7 @@ class Pong2Env(Env):
         # Return the initial observation
         return self._get_observation(), info
 
+    # TODO fix shoot and reload
     def step(self, action):
     # Perform actions based on action space
         shoot_penalty = 0
@@ -96,10 +98,23 @@ class Pong2Env(Env):
 
         # Shoot
         if action == 2:
-            # Prevent agent from spamming action 3
-            shoot_penalty = -0.5
-            # Shoot and reload with Threading
-            threading.Thread(target=self.shoot_and_reload).start()
+            if self.shootflag == 0:
+                # Prevent agent from spamming action 3
+                shoot_penalty = -0.5
+                # Shoot and reload with Threading
+                threading.Thread(target=self.shoot_and_reload).start()
+
+        if self.shootflag == 0:
+            if action == 2:
+                # Prevent agent from spamming action 3
+                ## shoot_penalty = -0.5
+                # Shoot and reload with Threading
+                threading.Thread(target=self.shoot_and_reload).start()
+
+                # TODO change number according to time
+                self.shootflag = 340
+        else:
+            self.shootflag -= 1
 
 
         # reduce game length by 1
@@ -109,6 +124,7 @@ class Pong2Env(Env):
 
         self.state = self._get_observation()  # Get the current observation
 
+        shoot_penalty = 0
         # Calculate Reward
         reward = shoot_penalty + self._calculate_reward(self.state)  # Calculate reward based on action and state
 
@@ -171,8 +187,9 @@ class Pong2Env(Env):
             reward = -5
             self.endflag = 1
 
-        # Higher reward for higher ball velocity after striking
-        if self.strikerflag == 1:
+        # Ball speed reward only gets triggered when close to striker and is moving away from it
+        if state[1] <= -0.15 and state[3] >= 0:
+            # Higher reward for higher ball velocity after striking
             speed_reward = state[3]
         else:
             speed_reward = 0
