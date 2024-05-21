@@ -4,7 +4,7 @@ import pybullet_data
 import os
 import random
 import time
-import threading
+
 
 physicsClient = p.connect(p.GUI)
 p.setAdditionalSearchPath(pybullet_data.getDataPath())
@@ -46,29 +46,8 @@ y = -abs(random.uniform(0.5, 10))  # Generate negative random value between 0 an
 
 p.applyExternalForce(ball, -1, [x, y, z], [0, 0, 0], 1)
 
-def shoot_and_reload():
-    shootVel = 2
-    p.setJointMotorControl2(pong2, 3, p.VELOCITY_CONTROL, targetVelocity=shootVel)
-    time.sleep(0.5)
-    # striker = p.getLinkState(pong2, 3, computeLinkVelocity=1)
-    # striker_vel = striker[6][0]
-    # print("STRIKER VEL FUUUUUCCCKK")
-    # print(striker_vel)
-    # print("")
-    # time.sleep(0.2)
-
-    reloadVel = -0.007
-    # p.setJointMotorControl2(pong2, 3, p.POSITION_CONTROL, targetPos, force = maxForce, maxVelocity = maxVel)
-    p.setJointMotorControl2(pong2, 3, p.VELOCITY_CONTROL, targetVelocity=reloadVel)
-    time.sleep(0.5)
-    # striker = p.getLinkState(pong2, 3, computeLinkVelocity=1)
-    # striker_vel = striker[6][0]
-    # print("STRIKER END")
-    # print(striker_vel)
-    # print("")
-    # time.sleep(0.4)
-    p.setJointMotorControl2(pong2, 3, p.VELOCITY_CONTROL, targetVelocity=0)
-
+shootflag = 0
+action = 0
 
 for i in range (100000):
 
@@ -113,15 +92,29 @@ for i in range (100000):
     ball_vel_y = ballVel[1]
     # print(ball_pos_x, ball_pos_y, ball_vel_x, ball_vel_y)
 
+    if i % 340 == 0:
+        action = 2
 
 
-    if i % 300 == 0:
-        targetPos = 0.015
-        maxVel = 2
-        maxForce = 100000
-        # p.setJointMotorControl2(pong2, 3, p.VELOCITY_CONTROL, targetVelocity = maxVel)
+    if shootflag == 0:
+        p.setJointMotorControl2(pong2, 3, p.VELOCITY_CONTROL, targetVelocity=0)
+        if action == 2:
+            # Prevent agent from spamming action 3
+            ## shoot_penalty = -0.5
+            # shoot
+            maxVel = 2
+            p.setJointMotorControl2(pong2, 3, p.VELOCITY_CONTROL, targetVelocity=maxVel)
 
-        threading.Thread(target=shoot_and_reload).start()
+            # TODO change number according to time
+            shootflag = 340
+            action = 0
+
+    elif shootflag == 300:
+        maxVel = -0.025
+        p.setJointMotorControl2(pong2, 3, p.VELOCITY_CONTROL, targetVelocity=maxVel)
+        shootflag -= 1
+    else:
+        shootflag -= 1
 
 
 

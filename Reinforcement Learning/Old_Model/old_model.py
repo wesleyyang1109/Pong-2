@@ -5,7 +5,6 @@ import pybullet as p
 import pybullet_data
 import numpy as np
 import time
-import threading
 import os
 import random
 from stable_baselines3.common.env_checker import check_env
@@ -34,7 +33,7 @@ class Pong2Env(Env):
     def reset(self, seed=None):
         # Reset the simulation to the initial state
         p.disconnect(self.client)
-        self.client = p.connect(p.DIRECT)
+        self.client = p.connect(p.GUI)
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
         p.setGravity(0, 0, -9.8)
 
@@ -58,8 +57,8 @@ class Pong2Env(Env):
 
         # TODO change force magnitude
         # Apply a random force to the ball
-        x = random.uniform(-4, 4)
-        y = -abs(random.uniform(2, 4))
+        x = random.uniform(-2, 2)
+        y = -abs(random.uniform(1, 2))
         z = 0
         p.applyExternalForce(self.ball, -1, [x, y, z], [0, 0, 0], p.WORLD_FRAME)
 
@@ -96,23 +95,23 @@ class Pong2Env(Env):
             maxForce = 50
             p.setJointMotorControl2(self.pong2, 2, p.VELOCITY_CONTROL, targetVelocity=maxVel, force=maxForce)
 
-        # Shoot
-        if action == 2:
-            if self.shootflag == 0:
-                # Prevent agent from spamming action 3
-                shoot_penalty = -0.5
-                # Shoot and reload with Threading
-                threading.Thread(target=self.shoot_and_reload).start()
-
+        # Check if agent has shoot
         if self.shootflag == 0:
+            p.setJointMotorControl2(self.pong2, 3, p.VELOCITY_CONTROL, targetVelocity=0)
+            # Shoot
             if action == 2:
                 # Prevent agent from spamming action 3
                 ## shoot_penalty = -0.5
-                # Shoot and reload with Threading
-                threading.Thread(target=self.shoot_and_reload).start()
+                # shoot
+                maxVel = 1
+                p.setJointMotorControl2(self.pong2, 3, p.VELOCITY_CONTROL, targetVelocity=maxVel)
 
-                # TODO change number according to time
                 self.shootflag = 340
+
+        elif self.shootflag == 250:
+            maxVel = -0.025
+            p.setJointMotorControl2(self.pong2, 3, p.VELOCITY_CONTROL, targetVelocity=maxVel)
+            self.shootflag -= 1
         else:
             self.shootflag -= 1
 
@@ -184,13 +183,14 @@ class Pong2Env(Env):
         # Ball touches robot sensor (Player Wins)
         robot_contacts = p.getContactPoints(self.ball, self.pong2, linkIndexB=4)
         if robot_contacts:
-            reward = -5
+            reward = -10
             self.endflag = 1
 
+        # TODO maybe add it gets triggered only when action 2 is picked
         # Ball speed reward only gets triggered when close to striker and is moving away from it
-        if state[1] <= -0.15 and state[3] >= 0:
+        if state[1] == -0.15 and state[3] >= 1:
             # Higher reward for higher ball velocity after striking
-            speed_reward = state[3]
+            speed_reward = state[3] * 10
         else:
             speed_reward = 0
 
@@ -210,18 +210,6 @@ class Pong2Env(Env):
         else:
             done = False
         return done
-
-    def shoot_and_reload(self):
-        maxVel = 2
-        #maxForce = 100000
-        p.setJointMotorControl2(self.pong2, 3, p.VELOCITY_CONTROL, targetVelocity=maxVel)
-        time.sleep(0.5)
-
-        maxVel = -1
-        # p.setJointMotorControl2(pong2, 3, p.POSITION_CONTROL, targetPos, force = maxForce, maxVelocity = maxVel)
-        p.setJointMotorControl2(self.pong2, 3, p.VELOCITY_CONTROL, targetVelocity=maxVel)
-        time.sleep(0.5)
-        p.setJointMotorControl2(self.pong2, 3, p.VELOCITY_CONTROL, targetVelocity=0)
 
 
 # env = Pong2Env()
