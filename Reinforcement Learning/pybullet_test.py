@@ -156,15 +156,10 @@ for i in range (100000):
         p.changeDynamics(ball, -1, restitution=0.5)
 
         # Generate random x and z values between -1 and 1
-        x = random.uniform(-4, 4)
+        x = random.uniform(-3, 3)
+        y = -abs(random.uniform(2, 3))
         z = 0
-        # Ensure negative y-component (only towards robot)
-        y = -abs(random.uniform(2, 4))  # Generate negative random value between 1 and 6
-        # x = 0
-        # y = -6
-        # z = 0
-
-        p.applyExternalForce(ball, -1, [x, y, z], [0, 0, 0], 1)
+        p.applyExternalForce(ball, -1, [x, y, z], [0, 0, 0], p.WORLD_FRAME)
 
     p.stepSimulation()
     time.sleep(1./240.)

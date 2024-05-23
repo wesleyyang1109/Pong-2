@@ -79,7 +79,6 @@ class Pong2Env(Env):
         # Return the initial observation
         return self._get_observation(), info
 
-    # TODO fix shoot and reload
     def step(self, action):
     # Perform actions based on action space
         shoot_penalty = 0
@@ -95,7 +94,7 @@ class Pong2Env(Env):
             maxForce = 50
             p.setJointMotorControl2(self.pong2, 2, p.VELOCITY_CONTROL, targetVelocity=maxVel, force=maxForce)
 
-        # Check if agent has shoot
+        # Check if agent has shot already
         if self.shootflag == 0:
             p.setJointMotorControl2(self.pong2, 3, p.VELOCITY_CONTROL, targetVelocity=0)
             # Shoot
@@ -130,6 +129,8 @@ class Pong2Env(Env):
         done = self._is_done()  # Determine if episode is finished
         truncated = False
         info = {}  # Optional info dictionary
+
+        #time.sleep(1. / 240.)
         return self.state, reward, done, truncated, info
 
     def render(self, mode='human'):
@@ -170,9 +171,13 @@ class Pong2Env(Env):
         if self.strikerflag == 0:
             # Striker touches Ball
             striker_contacts = p.getContactPoints(self.ball, self.pong2, linkIndexB=3)
+            length_penalty = 0
             if striker_contacts:
                 reward = 5
                 self.strikerflag = 1
+                length_penalty = 0.0001
+        else:
+            length_penalty = 0.0001
 
         # Ball touches player sensor (Robot Wins)
         player_contacts = p.getContactPoints(self.ball, self.pong2, linkIndexB=5)
@@ -188,15 +193,18 @@ class Pong2Env(Env):
 
         # TODO maybe add it gets triggered only when action 2 is picked
         # Ball speed reward only gets triggered when close to striker and is moving away from it
-        if state[1] == -0.15 and state[3] >= 1:
+        if state[1] == -0.15 and state[3] >= 0.5:
             # Higher reward for higher ball velocity after striking
             speed_reward = state[3] * 10
         else:
             speed_reward = 0
 
-        #length_penalty = (10000 - self.game_length) * 0.025
+        if self.game_length <= 0:
+            slow_penalty = 5
+        else
+            slow_penalty = 0
 
-        reward = reward + speed_reward# - length_penalty
+        reward = reward + speed_reward - length_penalty - slow_penalty
 
         return reward
 
