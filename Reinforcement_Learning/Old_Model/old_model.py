@@ -5,6 +5,7 @@ import pybullet as p
 import pybullet_data
 import numpy as np
 import time
+import math
 import os
 import random
 from stable_baselines3.common.env_checker import check_env
@@ -57,8 +58,13 @@ class Pong2Env(Env):
 
         # TODO change force magnitude
         # Apply a random force to the ball
-        x = random.uniform(-2, 2)
-        y = -abs(random.uniform(1, 2))
+        while True:
+            x = random.uniform(-4, 4)
+            y = random.uniform(-4, -2)  # y must be negative and not zero
+            vector_length = math.sqrt(x ** 2 + y ** 2)
+            if 3 <= vector_length <= 4:
+                break
+
         z = 0
         p.applyExternalForce(self.ball, -1, [x, y, z], [0, 0, 0], p.WORLD_FRAME)
 
@@ -79,28 +85,38 @@ class Pong2Env(Env):
         # Return the initial observation
         return self._get_observation(), info
 
+    # TODO fix shoot and reload
     def step(self, action):
     # Perform actions based on action space
         shoot_penalty = 0
         # Left
         if action == 0:
-            maxVel = 0.5
+            maxVel = 0.3
             maxForce = 50
             p.setJointMotorControl2(self.pong2, 2, p.VELOCITY_CONTROL, targetVelocity=maxVel, force=maxForce)
 
         # Right
         if action == 1:
-            maxVel = -0.5
+            maxVel = -0.3
             maxForce = 50
             p.setJointMotorControl2(self.pong2, 2, p.VELOCITY_CONTROL, targetVelocity=maxVel, force=maxForce)
 
-        # Check if agent has shot already
+        if action == 2:
+            # Prevent agent from spamming action 3
+            shoot_penalty = -0.0001
+
+        # when agent choose action 2 while in contact with ball -> extra reward
+        striker_contacts = p.getContactPoints(self.ball, self.pong2, linkIndexB=3)
+        if striker_contacts and action == 2:
+            niceshot = 50
+        else:
+            niceshot = 0
+
+        # Check if agent has shoot
         if self.shootflag == 0:
             p.setJointMotorControl2(self.pong2, 3, p.VELOCITY_CONTROL, targetVelocity=0)
             # Shoot
             if action == 2:
-                # Prevent agent from spamming action 3
-                ## shoot_penalty = -0.5
                 # shoot
                 maxVel = 1
                 p.setJointMotorControl2(self.pong2, 3, p.VELOCITY_CONTROL, targetVelocity=maxVel)
@@ -122,15 +138,12 @@ class Pong2Env(Env):
 
         self.state = self._get_observation()  # Get the current observation
 
-        shoot_penalty = 0
         # Calculate Reward
-        reward = shoot_penalty + self._calculate_reward(self.state)  # Calculate reward based on action and state
+        reward = shoot_penalty + niceshot + self._calculate_reward(self.state)  # Calculate reward based on action and state
 
         done = self._is_done()  # Determine if episode is finished
         truncated = False
         info = {}  # Optional info dictionary
-
-        #time.sleep(1. / 240.)
         return self.state, reward, done, truncated, info
 
     def render(self, mode='human'):
@@ -173,38 +186,36 @@ class Pong2Env(Env):
             striker_contacts = p.getContactPoints(self.ball, self.pong2, linkIndexB=3)
             length_penalty = 0
             if striker_contacts:
-                reward = 5
+                reward = 20
                 self.strikerflag = 1
-                length_penalty = 0.0001
+                length_penalty = 0.001
         else:
-            length_penalty = 0.0001
+            length_penalty = 0.001
 
         # Ball touches player sensor (Robot Wins)
         player_contacts = p.getContactPoints(self.ball, self.pong2, linkIndexB=5)
         if player_contacts:
-            reward = 10
+            reward = 50
             self.endflag = 1
 
         # Ball touches robot sensor (Player Wins)
         robot_contacts = p.getContactPoints(self.ball, self.pong2, linkIndexB=4)
         if robot_contacts:
-            reward = -10
+            reward = -100
             self.endflag = 1
 
-        # TODO maybe add it gets triggered only when action 2 is picked
         # Ball speed reward only gets triggered when close to striker and is moving away from it
-        if state[1] == -0.15 and state[3] >= 0.5:
+        if state[1] <= -0.15 and state[3] >= 0.5:
             # Higher reward for higher ball velocity after striking
             speed_reward = state[3] * 10
+        # elif state[1] <= -0.15 and state[3] <= 0:
+        #     speed_reward = state[3] * 8
         else:
             speed_reward = 0
 
-        if self.game_length <= 0:
-            slow_penalty = 5
-        else
-            slow_penalty = 0
+        #length_penalty = (10000 - self.game_length) * 0.025
 
-        reward = reward + speed_reward - length_penalty - slow_penalty
+        reward = reward + speed_reward - length_penalty
 
         return reward
 
@@ -218,7 +229,6 @@ class Pong2Env(Env):
         else:
             done = False
         return done
-
 
 # env = Pong2Env()
 # env = Monitor(env)

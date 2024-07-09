@@ -61,7 +61,7 @@ class Pong2newEnv(Env):
         old_env = Pong2Env()
         old_env = Monitor(old_env)
 
-        model_path = "/Users/wesleyyang/PycharmProjects/pong2/Reinforcement Learning/Old_Model/Training/Saved Models/PPO_Model_Pong2"
+        model_path = "/Reinforcement_Learning/Old_Model/Training/Saved Models/PPO_Model_Pong2"
         self.model = PPO.load(model_path, env=old_env)
 
         obs = self._get_observation()

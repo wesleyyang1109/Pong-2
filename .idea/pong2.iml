@@ -11,7 +11,7 @@
   <component name="PyNamespacePackagesService">
     <option name="namespacePackageFolders">
       <list>
-        <option value="$MODULE_DIR$/Reinforcement Learning" />
+        <option value="$MODULE_DIR$/Reinforcement_Learning" />
       </list>
     </option>
   </component>
