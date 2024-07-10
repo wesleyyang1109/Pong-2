@@ -73,6 +73,7 @@ class Pong2Env(Env):
         self.endflag = 0
         self.strikerflag = 0
         self.shootflag = 0
+        self.speed_rew_count = 100
 
         # Set the camera position
         cameraDistance = 1
@@ -108,7 +109,7 @@ class Pong2Env(Env):
         # when agent choose action 2 while in contact with ball -> extra reward
         striker_contacts = p.getContactPoints(self.ball, self.pong2, linkIndexB=3)
         if striker_contacts and action == 2:
-            niceshot = 50
+            niceshot = 30
         else:
             niceshot = 0
 
@@ -201,13 +202,15 @@ class Pong2Env(Env):
         # Ball touches robot sensor (Player Wins)
         robot_contacts = p.getContactPoints(self.ball, self.pong2, linkIndexB=4)
         if robot_contacts:
-            reward = -100
+            reward = -70
             self.endflag = 1
 
+
         # Ball speed reward only gets triggered when close to striker and is moving away from it
-        if state[1] <= -0.15 and state[3] >= 0.5:
+        if self.speed_rew_count >= 0 and state[3] >= 0.5:
             # Higher reward for higher ball velocity after striking
-            speed_reward = state[3] * 10
+            speed_reward = state[3]
+            self.speed_rew_count -= 1
         # elif state[1] <= -0.15 and state[3] <= 0:
         #     speed_reward = state[3] * 8
         else:
