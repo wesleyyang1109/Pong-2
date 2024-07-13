@@ -9,7 +9,7 @@ import math
 
 physicsClient = p.connect(p.GUI)
 p.setAdditionalSearchPath(pybullet_data.getDataPath())
-p.setGravity(0,0,-10)
+p.setGravity(0,0,-9.8)
 planeId = p.loadURDF("plane.urdf")
 
 
@@ -27,8 +27,9 @@ startOrientation = p.getQuaternionFromEuler([0,0,0])
 pong2 = p.loadURDF("URDF/pong2.urdf", startPos, startOrientation)
 fixed_pos = [0, 0, 0]  # Change this to the desired fixed position
 p.createConstraint(pong2, -1, -1, -1, p.JOINT_FIXED, fixed_pos, [0, 0, 0], [0, 0, 0])
+# TODO all types of coefficients
 for i in range(4):
-    p.changeDynamics(pong2, i, restitution=0.5)
+    p.changeDynamics(pong2, i, restitution=0.8, lateralFriction=0.6)
 
 
 
@@ -36,7 +37,7 @@ startPos = [0, 0.25, 0.085]
 startOrientation1 = p.getQuaternionFromEuler([0,0,0])
 ball = p.loadURDF("URDF/ball.urdf", startPos, startOrientation1)
 
-p.changeDynamics(ball, -1, restitution = 0.5)
+p.changeDynamics(ball, -1, restitution = 0.8, lateralFriction=0.7)
 
 
 # Generate random x and z values between -1 and 1
@@ -103,7 +104,7 @@ for i in range (100000):
             # Prevent agent from spamming action 3
             ## shoot_penalty = -0.5
             # shoot
-            maxVel = 2
+            maxVel = 1
             p.setJointMotorControl2(pong2, 3, p.VELOCITY_CONTROL, targetVelocity=maxVel)
 
             # TODO change number according to time
@@ -111,7 +112,7 @@ for i in range (100000):
             action = 0
 
     elif shootflag == 300:
-        maxVel = -0.025
+        maxVel = -0.02
         p.setJointMotorControl2(pong2, 3, p.VELOCITY_CONTROL, targetVelocity=maxVel)
         shootflag -= 1
     else:
@@ -133,13 +134,13 @@ for i in range (100000):
 
     if i % 100 == 0:
         # MOVE LEFT
-        maxVel = 0.5
+        maxVel = 0
         maxForce = 50
         p.setJointMotorControl2(pong2, 2, p.VELOCITY_CONTROL, targetVelocity=maxVel, force=maxForce)
 
     if i % 200 == 0:
         # MOVE RIGHT
-        maxVel = -0.5
+        maxVel = 0
         maxForce = 50
         p.setJointMotorControl2(pong2, 2, p.VELOCITY_CONTROL, targetVelocity=maxVel, force=maxForce)
 
@@ -155,7 +156,8 @@ for i in range (100000):
         startPos = [spawnpos, 0.25, 0.085]
         startOrientation1 = p.getQuaternionFromEuler([0, 0, 0])
         ball = p.loadURDF("URDF/ball.urdf", startPos, startOrientation1)
-        p.changeDynamics(ball, -1, restitution=0.5)
+        # TODO all types of coefficients
+        p.changeDynamics(ball, -1, restitution=0.7, lateralFriction=0.7)
 
         # Generate random x and y values
         while True:

@@ -34,7 +34,7 @@ class Pong2Env(Env):
     def reset(self, seed=None):
         # Reset the simulation to the initial state
         p.disconnect(self.client)
-        self.client = p.connect(p.GUI)
+        self.client = p.connect(p.DIRECT)
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
         p.setGravity(0, 0, -9.8)
 
@@ -47,16 +47,15 @@ class Pong2Env(Env):
         self.pong2 = p.loadURDF("../URDF/pong2.urdf", startPosPong2, startOrientationPong2)
         p.createConstraint(self.pong2, -1, -1, -1, p.JOINT_FIXED, [0, 0, 0], [0, 0, 0], [0, 0, 0])
         for i in range(4):
-            p.changeDynamics(self.pong2, i, restitution=0.5)
+            p.changeDynamics(self.pong2, i, restitution=0.8, lateralFriction=0.6)
 
         # Respawn ball
         spawnpos = random.uniform(-0.2, 0.2)
         startPosBall = [spawnpos, 0.22, 0.085]
         startOrientationBall = p.getQuaternionFromEuler([0, 0, 0])
         self.ball = p.loadURDF("../URDF/ball.urdf", startPosBall, startOrientationBall)
-        p.changeDynamics(self.ball, -1, restitution=0.5)
+        p.changeDynamics(self.ball, -1, restitution=0.7, lateralFriction=0.7)
 
-        # TODO change force magnitude
         # Apply a random force to the ball
         while True:
             x = random.uniform(-4, 4)
@@ -74,6 +73,7 @@ class Pong2Env(Env):
         self.strikerflag = 0
         self.shootflag = 0
         self.speed_rew_count = 100
+        self.niceshot_flag = 0
 
         # Set the camera position
         cameraDistance = 1
@@ -86,7 +86,6 @@ class Pong2Env(Env):
         # Return the initial observation
         return self._get_observation(), info
 
-    # TODO fix shoot and reload
     def step(self, action):
     # Perform actions based on action space
         shoot_penalty = 0
@@ -108,8 +107,9 @@ class Pong2Env(Env):
 
         # when agent choose action 2 while in contact with ball -> extra reward
         striker_contacts = p.getContactPoints(self.ball, self.pong2, linkIndexB=3)
-        if striker_contacts and action == 2:
+        if striker_contacts and self.niceshot_flag == 0 and action == 2:
             niceshot = 30
+            self.niceshot_flag = 1
         else:
             niceshot = 0
 
@@ -125,7 +125,7 @@ class Pong2Env(Env):
                 self.shootflag = 340
 
         elif self.shootflag == 250:
-            maxVel = -0.025
+            maxVel = -0.02
             p.setJointMotorControl2(self.pong2, 3, p.VELOCITY_CONTROL, targetVelocity=maxVel)
             self.shootflag -= 1
         else:
@@ -202,19 +202,24 @@ class Pong2Env(Env):
         # Ball touches robot sensor (Player Wins)
         robot_contacts = p.getContactPoints(self.ball, self.pong2, linkIndexB=4)
         if robot_contacts:
-            reward = -70
+            reward = -50
             self.endflag = 1
 
 
         # Ball speed reward only gets triggered when close to striker and is moving away from it
         if self.speed_rew_count >= 0 and state[3] >= 0.5:
             # Higher reward for higher ball velocity after striking
-            speed_reward = state[3]
+            speed_reward = state[3] * 10
             self.speed_rew_count -= 1
         # elif state[1] <= -0.15 and state[3] <= 0:
         #     speed_reward = state[3] * 8
         else:
             speed_reward = 0
+
+        plane_contacts = p.getContactPoints(self.ball, self.planeId)
+        if plane_contacts:
+            reward += -30
+            self.endflag = 1
 
         #length_penalty = (10000 - self.game_length) * 0.025
 
